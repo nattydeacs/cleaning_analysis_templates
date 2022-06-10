@@ -55,5 +55,6 @@ df.dropna(axis = 0)
 #Step 4: aggregating data
 ###################################################
 
+#reset index removes the multi-index
 dfSummary = df.groupby('Series_title_2').agg({'Data_value': 'mean'}).reset_index().copy()
 dfSummary= dfSummary.rename(columns={"Data_value": "Data_value_mean"})
