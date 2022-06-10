@@ -29,17 +29,14 @@ unique(df$Group)
 #date conversion (see ymd function documentation)
 #convert column from number to character to date 
 df <- df %>% mutate(Period = ym(as.character(Period)))
-#remove columns containing only  null values
-df<- Filter(function(x)!all(is.na(x)), df)
-#remove rows with null values (all in this case)
-df <- na.omit(df)
-#filter df on condition
-df <- df %>% filter(Series_title_2 == "Agriculture, Forestry and Fishing")
+#filter df on conditions
+df <- df %>% filter(Series_title_2 == "Agriculture, Forestry and Fishing" |
+                      Series_title_2 == "Mining")
 #select columns
 df <- df %>% select(c("Period", "Data_value", "Subject", "Group", 
                       "Series_title_1", "Series_title_2"))
 #drop column
-df <- df %>% select(-"Series_title_2")
+df <- df %>% select(-"Series_title_1")
 #add calculated columns 
 df <- df %>% mutate(Data_value_sqrt = sqrt(Data_value))
 
@@ -47,14 +44,25 @@ df <- df %>% mutate(Data_value_sqrt = sqrt(Data_value))
 df <- read.csv("employment-data.csv")
 
 df <- df %>% mutate(Period = ym(as.character(Period))) %>%
-  filter(Series_title_2 == "Agriculture, Forestry and Fishing") %>%
+  filter(Series_title_2 == "Agriculture, Forestry and Fishing" |
+           Series_title_2 == "Mining") %>%
   select(c("Period", "Data_value", "Subject", "Group", 
            "Series_title_1", "Series_title_2")) %>%
-  select(-"Series_title_2") %>% #irl you'd just not select this column in the line above
+  select(-"Series_title_1") %>% #irl you'd just not select this column in the line above
   mutate(Data_value_sqrt = sqrt(Data_value))
 
+#remove rows with null values 
 df <- na.omit(df)
+#remove columns containing only  null values
 df<- Filter(function(x)!all(is.na(x)), df)
+
+###################################################
+#Step 4: aggregating data
+###################################################
+
+dfSummary <- df %>%
+  group_by(Series_title_2) %>% #grouping column(s)
+  summarise()
 
 
 
