@@ -70,7 +70,7 @@ test = pd.concat([X_test, y_test], axis=1)
 #forward stepwise variable selection to determine order variables will be added to model
 #####################################
 
-#order candidate variables by AUC based on our original dataframe
+#order candidate variables by AUC based on our training dataframe
 
 #function to calculate auc
 def auc(variables, target, basetable):
