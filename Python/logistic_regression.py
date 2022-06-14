@@ -51,6 +51,22 @@ df = df.drop(["sent_at", "sent_month", "simple_status"], axis = 1)
 df = df.dropna(axis = 0)
 
 #####################################
+#split between training and testing sets
+#####################################
+
+# Create dataframes with variables and target
+X = df.drop(["was_accepted"], axis = 1)
+y = df["was_accepted"]
+
+#70/30 split, stratify by y so train and test sets have equal target incidence
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = .3, stratify = y)
+
+
+#create final train and test dataframes
+train = pd.concat([X_train, y_train], axis=1)
+test = pd.concat([X_test, y_test], axis=1)
+
+#####################################
 #forward stepwise variable selection to determine order variables will be added to model
 #####################################
 
@@ -86,7 +102,7 @@ current_variables = []
 
 number_iterations = len(candidate_variables)
 for i in range(0, number_iterations):
-    next_variable = next_best(current_variables, candidate_variables, ["was_accepted"], df)
+    next_variable = next_best(current_variables, candidate_variables, ["was_accepted"], train)
     current_variables = current_variables + [next_variable]
     candidate_variables.remove(next_variable)
 print(current_variables)
@@ -103,7 +119,7 @@ cor = []
 for x in current_variables:
     iteration += 1
     for i in current_variables[iteration:]:
-        correlation = np.corrcoef(df[x], df[i])[0,1]
+        correlation = np.corrcoef(train[x], train[i])[0,1]
         Var1.append(x)
         Var2.append(i)
         cor.append(correlation)
@@ -115,24 +131,6 @@ corrTable["correlation"] = cor
 # remove non traditional due to multi-collinearity with years out
 
 current_variables.remove("non_trad")
-
-
-#####################################
-#split between training and testing sets
-#####################################
-
-# Create dataframes with variables and target
-X = df[current_variables]
-y = df["was_accepted"]
-
-#70/30 split, stratify by y so train and test sets have equal target incidence
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = .3, stratify = y)
-
-
-#creat final train and test dataframes
-train = pd.concat([X_train, y_train], axis=1)
-test = pd.concat([X_test, y_test], axis=1)
-
 
 #####################################
 #compare train/test auc curves to determine cutoff of variables
@@ -162,6 +160,9 @@ def auc_train_test(variables, target, train, test):
     auc_test = roc_auc_score(Y_test,predictions_test)
     return(auc_train, auc_test)
 
+#Reorder to see if that changes anything
+current_variables = ['is_fee_waived','lsat', 'softs', 'is_character_and_fitness_issues', 'gpa','is_international', 'years_out', 'urm',
+ 'is_military', 'months_after_sept_sent', 'is_in_state']
 
 # Iterate over the variables in current_variables
 for v in current_variables:
@@ -181,20 +182,21 @@ plt.xticks(x, current_variables, rotation = 90)
 plt.plot(x,y_train)
 plt.plot(x,y_test)
 plt.ylim((0.5, 0.9))
+plt.legend(labels = ["y_train", "y_test"])
+plt.ylabel("AUC")
 plt.show()
 
-#drop all variables after AUC of test line peaks
-current_variables.drop("_________")
+#select all variables before AUC of test line peaks
+predictors = ["lsat", "gpa", "urm"]
 
 
 #####################################
 #constructing model
 #####################################
-predictors = current_variables
 
 X = df[predictors] #select predictor variables
 
-y = df[["____"]] #select target variable
+y = df[["was_accepted"]] #select target variable
 
 #create logistic regression model 
 logreg = linear_model.LogisticRegression() 
@@ -207,7 +209,7 @@ logreg.fit(X, y)
 
 # priningt coeficients 
 coef = logreg.coef_
-for p,c in zip(predictors,list(coef[0])):
+for p,c in zip(predictors,coef[0]):
     print(p + '\t' + str(c))
 #print intercept
 print(logreg.intercept_)
@@ -223,6 +225,8 @@ predictions = logreg.predict_proba(new_df)
 #print first five
 print(predictions[0:5])
 
+predDf = pd.DataFrame([[175,3.49, True]], columns=["lsat", 'gpa', 'urm'])
+logreg.predict_proba(predDf) 
 #####################################
 #cumulative gains curve
 #####################################
